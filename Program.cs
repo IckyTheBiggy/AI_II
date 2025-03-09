@@ -1,6 +1,5 @@
 ﻿using System.Diagnostics;
 using System.Text.RegularExpressions;
-using System.Threading.Tasks;
 using OllamaSharp;
 
 class Program
@@ -17,25 +16,30 @@ class Program
 
         ollama.SelectedModel = "gemma2";
 
-        _prompt = Console.ReadLine();
-
-        if (!string.IsNullOrEmpty(_prompt))
+        while (true)
         {
-            await foreach (var stream in ollama.GenerateAsync(_prompt))
+            _prompt = Console.ReadLine();
+
+            if (!string.IsNullOrEmpty(_prompt))
             {
-                _response.Add(stream?.Response);
+                await foreach (var stream in ollama.GenerateAsync(_prompt))
+                {
+                    _response.Add(stream?.Response);
+                }
+
+                string finalResponse = string.Join("", _response);
+                finalResponse = Regex.Replace(finalResponse, @"[^\w\s.,!?;:""'()\-]", "");
+                _response.Clear();
+
+                await CallTTS(finalResponse);
+            }
+
+            else
+            {
+                Logger.LogError("Prompt is empty!");
             }
         }
 
-        else
-        {
-            Logger.LogError("Prompt is empty!");
-        }
-
-        string finalResponse = string.Join("", _response);
-        finalResponse = Regex.Replace(finalResponse, @"[^\w\s.,!?;:""'()\-]", "");
-
-        await CallTTS(finalResponse);
     }
 
     private static Task CallTTS(string message)
